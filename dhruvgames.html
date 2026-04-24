@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Arcade Games Hub</title>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  background: linear-gradient(135deg,#ff9a9e,#fad0c4);
+}
+
+h1 { color:#222; }
+
+.nav button {
+  padding:12px 25px;
+  margin:8px;
+  border:none;
+  border-radius:20px;
+  background:#6c5ce7;
+  color:white;
+  cursor:pointer;
+}
+
+.game { display:none; margin-top:20px; }
+.active { display:block; }
+
+.card {
+  background:white;
+  padding:20px;
+  border-radius:15px;
+  display:inline-block;
+  box-shadow:0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* MEMORY */
+.memory-grid {
+  display:grid;
+  grid-template-columns: repeat(4,80px);
+  gap:10px;
+  justify-content:center;
+}
+
+.memory-card {
+  width:80px;
+  height:80px;
+  background:#ffeaa7;
+  line-height:80px;
+  font-size:25px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+/* SNAKE */
+#snakeCanvas {
+  background:black;
+  border:3px solid #fff;
+}
+
+/* CAR */
+#road {
+  width:260px;
+  height:400px;
+  background:#ccc;
+  margin:auto;
+  position:relative;
+  overflow:hidden;
+}
+
+.car {
+  width:40px;
+  height:60px;
+  background:red;
+  position:absolute;
+  bottom:10px;
+  left:110px;
+}
+
+.enemy {
+  width:40px;
+  height:60px;
+  background:black;
+  position:absolute;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎮 Arcade Games Hub</h1>
+
+<div class="nav">
+  <button onclick="show('memory')">Memory</button>
+  <button onclick="show('guess')">Guess</button>
+  <button onclick="show('snake')">Snake</button>
+  <button onclick="show('car')">Car Dodge</button>
+</div>
+
+<!-- MEMORY -->
+<div id="memory" class="game active">
+<div class="card">
+<h2>Memory Game</h2>
+<p>Match all pairs to win</p>
+<button onclick="startMemory()">Start</button>
+<p id="memoryRes"></p>
+<div class="memory-grid" id="memoryGrid"></div>
+</div>
+</div>
+
+<!-- GUESS -->
+<div id="guess" class="game">
+<div class="card">
+<h2>Guess Game</h2>
+<p>Guess number (1-50)</p>
+<button onclick="startGuess()">Start</button><br><br>
+<input id="guessInput">
+<button onclick="checkGuess()">Check</button>
+<p id="guessRes"></p>
+</div>
+</div>
+
+<!-- SNAKE -->
+<div id="snake" class="game">
+<div class="card">
+<h2>Snake Game</h2>
+<p>Use arrow keys</p>
+<button onclick="startSnake()">Start</button>
+<button onclick="stopSnake()">Stop</button>
+<p id="snakeRes"></p>
+<canvas id="snakeCanvas" width="300" height="300"></canvas>
+</div>
+</div>
+
+<!-- CAR -->
+<div id="car" class="game">
+<div class="card">
+<h2>Car Dodge</h2>
+<p>Avoid enemies</p>
+<button onclick="startCar()">Start</button>
+<p id="carRes"></p>
+<div id="road">
+<div class="car" id="player"></div>
+</div>
+</div>
+</div>
+
+<script>
+function show(id){
+ document.querySelectorAll(".game").forEach(g=>g.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+}
+
+/* MEMORY */
+function startMemory(){
+ let emojis=["🍎","🍌","🍇","🍉","🍎","🍌","🍇","🍉"];
+ emojis.sort(()=>0.5-Math.random());
+ let grid=document.getElementById("memoryGrid");
+ grid.innerHTML="";
+ let first=null, matches=0;
+
+ emojis.forEach(e=>{
+  let card=document.createElement("div");
+  card.className="memory-card";
+  card.onclick=()=>{
+   if(card.innerText===""){
+    card.innerText=e;
+    if(!first) first=card;
+    else{
+     if(first.innerText!==card.innerText){
+      setTimeout(()=>{
+       first.innerText="";
+       card.innerText="";
+       first=null;
+      },500);
+     } else {
+      matches++;
+      first=null;
+      if(matches===4){
+       document.getElementById("memoryRes").innerText="🎉 YOU WIN!";
+      }
+     }
+    }
+   }
+  };
+  grid.appendChild(card);
+ });
+}
+
+/* GUESS */
+let num;
+function startGuess(){
+ num=Math.floor(Math.random()*50)+1;
+ document.getElementById("guessRes").innerText="";
+}
+
+function checkGuess(){
+ let val=document.getElementById("guessInput").value;
+ let res=document.getElementById("guessRes");
+
+ if(val==num) res.innerText="🎉 YOU WIN!";
+ else if(val>num) res.innerText="Too High";
+ else res.innerText="Too Low";
+}
+
+/* SNAKE */
+let snakeInterval;
+function startSnake(){
+ let c=document.getElementById("snakeCanvas");
+ let ctx=c.getContext("2d");
+
+ let snake=[{x:150,y:150}];
+ let dx=10,dy=0;
+ let food={x:100,y:100};
+
+ document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowUp"){dx=0;dy=-10;}
+  if(e.key==="ArrowDown"){dx=0;dy=10;}
+  if(e.key==="ArrowLeft"){dx=-10;dy=0;}
+  if(e.key==="ArrowRight"){dx=10;dy=0;}
+ });
+
+ snakeInterval=setInterval(()=>{
+  ctx.clearRect(0,0,300,300);
+
+  snake[0].x+=dx;
+  snake[0].y+=dy;
+
+  if(snake[0].x===food.x && snake[0].y===food.y){
+   food.x=Math.floor(Math.random()*30)*10;
+   food.y=Math.floor(Math.random()*30)*10;
+   snake.push({});
+  }
+
+  if(snake[0].x<0||snake[0].y<0||snake[0].x>=300||snake[0].y>=300){
+   document.getElementById("snakeRes").innerText="💀 YOU LOSE";
+   clearInterval(snakeInterval);
+  }
+
+  ctx.fillStyle="green";
+  snake.forEach(p=>ctx.fillRect(p.x,p.y,10,10));
+
+  ctx.fillStyle="red";
+  ctx.fillRect(food.x,food.y,10,10);
+ },100);
+}
+
+function stopSnake(){
+ clearInterval(snakeInterval);
+}
+
+/* CAR */
+function startCar(){
+ let player=document.getElementById("player");
+ let road=document.getElementById("road");
+
+ document.addEventListener("keydown",e=>{
+  let left=player.offsetLeft;
+  if(e.key==="ArrowLeft"&&left>0) player.style.left=(left-20)+"px";
+  if(e.key==="ArrowRight"&&left<220) player.style.left=(left+20)+"px";
+ });
+
+ setInterval(()=>{
+  let enemy=document.createElement("div");
+  enemy.className="enemy";
+  enemy.style.left=Math.random()*220+"px";
+  road.appendChild(enemy);
+
+  let move=setInterval(()=>{
+   enemy.style.top=enemy.offsetTop+5+"px";
+
+   if(enemy.offsetTop>400){
+    enemy.remove();
+    clearInterval(move);
+   }
+
+   if(enemy.offsetTop>330 &&
+      enemy.offsetLeft<player.offsetLeft+40 &&
+      enemy.offsetLeft+40>player.offsetLeft){
+    document.getElementById("carRes").innerText="💀 YOU LOSE";
+    clearInterval(move);
+   }
+  },50);
+ },2000);
+}
+</script>
+
+</body>
+</html>
